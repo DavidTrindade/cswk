@@ -11,6 +11,7 @@ public class Program {
         // the random robot controller
 		MazeLogic logic = new MazeLogic();
         logic.getControllerPool().addController(new RandomController());
+        logic.getControllerPool().addController(new HomingController());
 
         // run the maze
 		new MazeApp(logic);
