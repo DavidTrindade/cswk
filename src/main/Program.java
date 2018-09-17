@@ -12,6 +12,7 @@ public class Program {
 		MazeLogic logic = new MazeLogic();
         logic.getControllerPool().addController(new RandomController());
         logic.getControllerPool().addController(new HomingController());
+        logic.getControllerPool().addController(new Explorer());
 
         // run the maze
 		new MazeApp(logic);
