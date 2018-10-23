@@ -1,5 +1,6 @@
 import uk.ac.warwick.dcs.maze.logic.*;
 import java.awt.Point;
+import java.util.Random;
 
 public class RandomController implements IRobotController {
     // the robot in the maze
@@ -19,14 +20,14 @@ public class RandomController implements IRobotController {
         // has not been interrupted
         while(!robot.getLocation().equals(robot.getTargetLocation()) && active) {
             // generate a random number between 0-3 (inclusive)
-            int rand = (int)Math.round(Math.random()*3);
+            int rand = (int)(Math.random() * 4);
 
             // turn into one of the four directions, as determined
             // by the random number that was generated:
-            // 0: ahead
-            // 1: left
-            // 2: right
-            // 3: behind
+            // 0: ahead   prob=1/6
+            // 1: left    prob=1/3
+            // 2: right   prob=1/3
+            // 3: behind  prob=1/6
             switch (rand) {
             case 0:
                 robot.face(IRobot.AHEAD);
@@ -43,8 +44,26 @@ public class RandomController implements IRobotController {
             }
 
             // move one step into the direction the robot is facing
-            if (robot.look(IRobot.AHEAD) != IRobot.WALL)
+            if (robot.look(IRobot.AHEAD) != IRobot.WALL) {
+
+              switch (rand) {
+              case 0:
+                  robot.getLogger().log(IRobot.AHEAD);
+                  break;
+              case 1:
+                  robot.getLogger().log(IRobot.LEFT);
+                  break;
+              case 2:
+                  robot.getLogger().log(IRobot.RIGHT);
+                  break;
+              case 3:
+                  robot.getLogger().log(IRobot.BEHIND);
+                  break;
+              }
+
               robot.advance();
+            }
+
 
 
             // wait for a while if we are supposed to
