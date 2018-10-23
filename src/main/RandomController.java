@@ -43,7 +43,9 @@ public class RandomController implements IRobotController {
             }
 
             // move one step into the direction the robot is facing
-            robot.advance();
+            if (robot.look(IRobot.AHEAD) != IRobot.WALL)
+              robot.advance();
+
 
             // wait for a while if we are supposed to
             if (delay > 0)
