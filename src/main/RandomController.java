@@ -21,6 +21,7 @@ public class RandomController implements IRobotController {
         while(!robot.getLocation().equals(robot.getTargetLocation()) && active) {
             // generate a random number between 0-3 (inclusive)
             int rand = (int)(Math.random() * 4);
+            int randomTurn = (int)(Math.random() * 7);
 
             // turn into one of the four directions, as determined
             // by the random number that was generated:
@@ -28,19 +29,21 @@ public class RandomController implements IRobotController {
             // 1: left    prob=1/3
             // 2: right   prob=1/3
             // 3: behind  prob=1/6
-            switch (rand) {
-            case 0:
-                robot.face(IRobot.AHEAD);
-                break;
-            case 1:
-                robot.face(IRobot.LEFT);
-                break;
-            case 2:
-                robot.face(IRobot.RIGHT);
-                break;
-            case 3:
-                robot.face(IRobot.BEHIND);
-                break;
+            if (robot.look(IRobot.AHEAD) == IRobot.WALL || randomTurn == 2) {
+              switch (rand) {
+              case 0:
+                  robot.face(IRobot.AHEAD);
+                  break;
+              case 1:
+                  robot.face(IRobot.LEFT);
+                  break;
+              case 2:
+                  robot.face(IRobot.RIGHT);
+                  break;
+              case 3:
+                  robot.face(IRobot.BEHIND);
+                  break;
+              }
             }
 
             // move one step into the direction the robot is facing
