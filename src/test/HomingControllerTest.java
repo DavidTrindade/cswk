@@ -193,4 +193,55 @@ public class HomingControllerTest {
             "HomingController doesn't see a passage in the west!",
             this.controller.lookHeading(IRobot.WEST) == IRobot.PASSAGE);
     }
+
+    @Test(timeout=10000)
+    public void determineHeadingTest() {
+
+      //test determineHeading when target is North-East
+      this.robot.setTargetLocation(new Point(4,0));
+
+      //north, west and south are walls, east is a passage
+      this.maze.setCellType(2, 1, Maze.WALL);
+      this.maze.setCellType(3, 2, Maze.PASSAGE);
+      this.maze.setCellType(2, 3, Maze.WALL);
+      this.maze.setCellType(1, 2, Maze.WALL);
+      //redundant setCellType calls are for ease of use
+      assertTrue(
+            "HomingController should be going East",
+            this.controller.determineHeading() == IRobot.EAST);
+
+      //east, west and south are walls, north is a passage
+      this.maze.setCellType(2, 1, Maze.PASSAGE);
+      this.maze.setCellType(3, 2, Maze.WALL);
+      this.maze.setCellType(2, 3, Maze.WALL);
+      this.maze.setCellType(1, 2, Maze.WALL);
+      assertTrue(
+            "HomingController should be going North",
+            this.controller.determineHeading() == IRobot.NORTH);
+
+      //south and west are walls, north is a 'been before' tile, east is a passage
+      this.maze.setCellType(2, 1, IRobot.BEENBEFORE);
+      this.maze.setCellType(3, 2, Maze.PASSAGE);
+      this.maze.setCellType(2, 3, Maze.WALL);
+      this.maze.setCellType(1, 2, Maze.WALL);
+      assertTrue(
+            "HomingController should be going East",
+            this.controller.determineHeading() == IRobot.EAST);
+
+
+      //test determineHeading when target is North
+      this.robot.setTargetLocation(new Point(2,0));
+      //east, west and south are walls, north is a passage
+      this.maze.setCellType(2, 1, Maze.PASSAGE);
+      this.maze.setCellType(3, 2, Maze.WALL);
+      this.maze.setCellType(2, 3, Maze.WALL);
+      this.maze.setCellType(1, 2, Maze.WALL);
+      assertTrue(
+            "HomingController should be going North",
+            this.controller.determineHeading() == IRobot.NORTH);
+
+      //assume rest of directions operate similarly
+
+
+    }
 }
