@@ -13,6 +13,7 @@ public class Program {
         logic.getControllerPool().addController(new RandomController());
         logic.getControllerPool().addController(new HomingController());
         logic.getControllerPool().addController(new Explorer());
+        logic.getControllerPool().addController(new ExplorerLoop());
 
         // run the maze
 		new MazeApp(logic);
