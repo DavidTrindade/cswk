@@ -3,16 +3,19 @@ import java.awt.Point;
 import java.util.*;
 
 public class Explorer implements IRobotController {
-  // the robot in the maze
+
   private IRobot robot;
-  // a flag to indicate whether we are looking for a path
+  // the robot in the maze
+
   private boolean active = false;
+  // a flag to indicate whether we are looking for a path
+
+  private int delay;
   // a value (in ms) indicating how long we should wait
   // between moves
-  private int delay;
 
   private int explorerMode;
-  //0 - backtrack, 1 - explore
+  // 0 - backtrack, 1 - explore
 
   private RobotData robotData;
   // RobotData variable allowing storage of junctions
@@ -22,63 +25,92 @@ public class Explorer implements IRobotController {
     // this method is called when the "start" button is clicked
     // in the user interface
 
-      this.active = true;
+    this.active = true;
 
-      if (this.robot.getRuns() == 0) {
-        // initialise the data store at the start of the first run
-        this.robotData = new RobotData();
-        explorerMode = 1;
+    if (this.robot.getRuns() == 0) {
+      // Initialise robotData and set the robot to explore mode on the first run
+
+      this.robotData = new RobotData();
+      explorerMode = 1;
+    }
+
+    while(!robot.getLocation().equals(robot.getTargetLocation()) && active) {
+
+      switch(explorerMode) {
+        // Chooses which method to run depending on the value of explorerMode
+
+        case 0:
+        this.backtrack();
+        break;
+
+        case 1:
+        this.explore();
+        break;
       }
 
-      while(!robot.getLocation().equals(robot.getTargetLocation()) && active) {
+      robot.advance();
 
-        if (explorerMode == 1) {
-          this.explore();
-        } else {
-          this.backtrack();
-        }
-
-        robot.advance();
-
-        // wait for a while if we are supposed to
-        if (delay > 0)
+      if (delay > 0) {
+        // Wait for a while if we are supposed to
         robot.sleep(delay);
       }
+    }
 
   }
 
   public void explore() {
+    // Function to find unexplored passages
+    // Switches to backtrack mode when deadendencounterd
+
     try {
-      int nwExits = this.nonWallExits();
-      int bbExits = this.beenbeforeExits();
 
       int x = robot.getLocation().x;
       int y = robot.getLocation().y;
+
+      int nwExits = this.nonWallExits();
+      int bbExits = this.beenbeforeExits();
+
       int arriveHeading = robot.getHeading();
 
       switch (nwExits) {
+        /*
+          Does something different depending on how many non-wall paths there are
+           0 - Surrounded by walls: Error raised
+           1 - Deadend: Turns around and switches to backtrack mode unless no junction has been encountered yet
+           2 - Corridor/Corner: Goes down the only available path (not counting behind it)
+           3/4 - Junction: Goes down an unexplored passage, and records junction if it is new
+        */
+
         case 0:
         throw new MazeException("Surrounded by 4 walls");
 
         case 1:
-        if (robot.getLocation().x == 1 && robot.getLocation().y == 1) {
-          explorerMode = 1;
-        } else {
+
+        this.deadend();
+
+        if (robotData.getCounter() != 0) {
+          // Before the robot encounters any junctions a dead-end
+          // doesn't switch to backtrack mode
+
           explorerMode = 0;
         }
-        this.deadend();
 
         break;
 
         case 2:
+
         this.corridor();
         break;
 
         case 3: case 4:
+
+        this.junction();
+
         if (bbExits < 2) {
           robotData.addJunction(x, y, arriveHeading);
+          // If this is the first time encountering this junction then store it
         }
-        this.junction();
+
         break;
       }
     } catch (MazeException e) {
@@ -87,12 +119,19 @@ public class Explorer implements IRobotController {
   }
 
   public void backtrack() {
+    // Method for backtracking, robot goes back through junctions until it reaches
+    // one that has an unexplored passage
+
     try {
 
       int nwExits = this.nonWallExits();
       int pExits = this.passageExits();
+      int bbExits = this.beenbeforeExits();
+
       int x = robot.getLocation().x;
       int y = robot.getLocation().y;
+
+      int arriveHeading = robot.getHeading();
 
       switch (nwExits) {
         case 0:
@@ -108,12 +147,28 @@ public class Explorer implements IRobotController {
 
         case 3: case 4:
         if (pExits > 0) {
-          explorerMode = 1;
+          // If there are still unexplored exits then go down them
+
           this.junction();
-        } else if (robotData.findJunction(x, y) != -1) {
-          int arrivedHeading = robotData.findJunction(x, y);
+
+          if (bbExits < 2) {
+            robotData.addJunction(x, y, arriveHeading);
+            // If this is the first time encountering this junction then store it
+          }
+
+          explorerMode = 1;
+          // Switch to explore mode
+
+        } else if (robotData.getArrived(x, y) != -1) {
+
+          int arrivedHeading = robotData.getArrived(x, y);
+          // Not to be confused with arriveHeading, this is getting previous data
+
           int oppositeHeading = this.reverseDirection(arrivedHeading);
+
           robot.setHeading(oppositeHeading);
+          // Go in the opposite direction from which you first came into this junction
+
         } else {
           throw new MazeException("Encountered new junction while backtracking");
         }
@@ -270,8 +325,21 @@ class RobotData {
     junctionCounter = 0;
   }
 
+  public int getCounter() {
+    return junctionCounter;
+  }
+
+  public void addJunction(int x, int y, int arriveHeading, int departHeading) {
+    // Adds junction with arrival and depart headings
+
+    junctions[junctionCounter] = new Junction(x, y, arriveHeading, departHeading);
+    System.out.println(printJunction());
+    junctionCounter++;
+  }
+
   public void addJunction(int x, int y, int arriveHeading) {
     // Adds junction with just arrival heading
+
     junctions[junctionCounter] = new Junction(x, y, arriveHeading);
     System.out.println(printJunction());
     junctionCounter++;
@@ -284,11 +352,33 @@ class RobotData {
     junctionCounter++;
   }
 
-  public int findJunction(int x, int y) {
+  public void removeJunction() {
+    junctionCounter--;
+  }
+
+  public void replaceDepart(int x, int y, int departHeading) {
+    for (int i = 0; i < junctionCounter; i++) {
+      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+        junctions[i].setDeparted(departHeading);
+      }
+    }
+  }
+
+  public int getArrived(int x, int y) {
     // Finds arrival heading for given junction
     for (int i = 0; i < junctionCounter; i++) {
       if (x == junctions[i].getX() && y == junctions[i].getY()) {
         return junctions[i].getArrived();
+      }
+    }
+    return -1;
+  }
+
+  public int getDeparted(int x, int y) {
+    // Finds departure heading for given junction
+    for (int i = 0; i < junctionCounter; i++) {
+      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+        return junctions[i].getDeparted();
       }
     }
     return -1;
@@ -329,7 +419,7 @@ class RobotData {
         junctions[i].setMark(index, mark);
       }
     }
-    System.out.println(Arrays.toString(junctions[this.findJunctionIndex(x, y)].getMarks()));
+    // System.out.println(Arrays.toString(junctions[this.findJunctionIndex(x, y)].getMarks()));
   }
 
   public void changeMarks(int x, int y, int firstDirection, int firstMark, int secondDirection, int secondMark) {
@@ -352,7 +442,7 @@ class RobotData {
         junctions[i].setMark(index2, secondMark);
       }
     }
-    System.out.println(Arrays.toString(junctions[this.findJunctionIndex(x, y)].getMarks()));
+    // System.out.println(Arrays.toString(junctions[this.findJunctionIndex(x, y)].getMarks()));
   }
 
   public String printJunction() {
@@ -453,6 +543,10 @@ class Junction {
 
   public int getDeparted() {
     return departed;
+  }
+
+  public void setDeparted(int departed) {
+    this.departed = departed;
   }
 
   public int[] getMarks() {
