@@ -4,22 +4,21 @@ import java.util.*;
 
 public class Explorer implements IRobotController {
 
-  private IRobot robot;
+  protected IRobot robot;
   // the robot in the maze
 
-  private boolean active = false;
+  protected boolean active = false;
   // a flag to indicate whether we are looking for a path
 
-  private int delay;
+  protected int delay;
   // a value (in ms) indicating how long we should wait
   // between moves
 
-  private int explorerMode;
+  protected int explorerMode;
   // 0 - backtrack, 1 - explore
 
-  private RobotData robotData;
+  protected RobotData robotData;
   // RobotData variable allowing storage of junctions
-
 
   public void start() {
     // this method is called when the "start" button is clicked
@@ -64,8 +63,7 @@ public class Explorer implements IRobotController {
 
     try {
 
-      int x = robot.getLocation().x;
-      int y = robot.getLocation().y;
+      Point pos = robot.getLocation();
 
       int nwExits = this.nonWallExits();
       int bbExits = this.beenbeforeExits();
@@ -107,7 +105,7 @@ public class Explorer implements IRobotController {
         this.junction();
 
         if (bbExits < 2) {
-          robotData.addJunction(x, y, arriveHeading);
+          robotData.addJunction(pos, arriveHeading);
           // If this is the first time encountering this junction then store it
         }
 
@@ -128,8 +126,7 @@ public class Explorer implements IRobotController {
       int pExits = this.passageExits();
       int bbExits = this.beenbeforeExits();
 
-      int x = robot.getLocation().x;
-      int y = robot.getLocation().y;
+      Point pos = robot.getLocation();
 
       int arriveHeading = robot.getHeading();
 
@@ -152,16 +149,16 @@ public class Explorer implements IRobotController {
           this.junction();
 
           if (bbExits < 2) {
-            robotData.addJunction(x, y, arriveHeading);
+            robotData.addJunction(pos, arriveHeading);
             // If this is the first time encountering this junction then store it
           }
 
           explorerMode = 1;
           // Switch to explore mode
 
-        } else if (robotData.getArrived(x, y) != -1) {
+        } else if (robotData.getArrived(pos) != -1) {
 
-          int arrivedHeading = robotData.getArrived(x, y);
+          int arrivedHeading = robotData.getArrived(pos);
           // Not to be confused with arriveHeading, this is getting previous data
 
           int oppositeHeading = this.reverseDirection(arrivedHeading);
@@ -181,8 +178,9 @@ public class Explorer implements IRobotController {
   }
 
   public int nonWallExits() {
-    // returns a number indicating how many non-wall exits there
+    // Returns a number indicating how many non-wall exits there
     // are surrounding the robot's current position
+    
     int counter = 0;
     for (int i = 0; i < 4; i++) {
       if (robot.look(IRobot.AHEAD) != IRobot.WALL) {
@@ -292,6 +290,7 @@ public class Explorer implements IRobotController {
   public void reset() {
     active = false;
     robotData.resetCounter();
+    explorerMode = 1;
   }
 
   // sets the reference to the robot
@@ -329,81 +328,87 @@ class RobotData {
     return junctionCounter;
   }
 
-  public void addJunction(int x, int y, int arriveHeading, int departHeading) {
+  public void addJunction(Point pos, int arriveHeading, int departHeading) {
     // Adds junction with arrival and depart headings
 
-    junctions[junctionCounter] = new Junction(x, y, arriveHeading, departHeading);
-    System.out.println(printJunction());
+    junctions[junctionCounter] = new Junction(pos, arriveHeading, departHeading);
+    System.out.println(printJunction(junctionCounter));
     junctionCounter++;
   }
 
-  public void addJunction(int x, int y, int arriveHeading) {
+  public void addJunction(Point pos, int arriveHeading) {
     // Adds junction with just arrival heading
 
-    junctions[junctionCounter] = new Junction(x, y, arriveHeading);
-    System.out.println(printJunction());
+    junctions[junctionCounter] = new Junction(pos, arriveHeading);
+    System.out.println(printJunction(junctionCounter));
     junctionCounter++;
   }
 
-  public void addJunction(int x, int y) {
+  public void addJunction(Point pos) {
     // Adds junction with just position and also initialises marks
-    junctions[junctionCounter] = new Junction(x, y);
-    System.out.println(printJunction());
+
+    junctions[junctionCounter] = new Junction(pos);
+    System.out.println(printJunction(junctionCounter));
     junctionCounter++;
   }
+
+  //IMPLEMENT THIS SO THAT THE DEPART HEADING IS ADDED EVERY TIME IT IS GOING FORWARDS AND LEAVES THROUGH A NEW JUNCTION AND IS CHANGED FOR AN OLD JUNCTION
+  // THEN THE SMART SETTING USES THAT DIRECTION TO FIND THE EXIT AS QUICK AS POSSIBLE
+
 
   public void removeJunction() {
     junctionCounter--;
   }
 
-  public void replaceDepart(int x, int y, int departHeading) {
+  public void replaceDepart(Point pos, int departHeading) {
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { //(x == junctions[i].getX() && y == junctions[i].getY()) {
         junctions[i].setDeparted(departHeading);
+        // System.out.println(printJunction(i));
       }
     }
   }
 
-  public int getArrived(int x, int y) {
+  public int getArrived(Point pos) {
     // Finds arrival heading for given junction
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { // (x == junctions[i].getX() && y == junctions[i].getY()) {
         return junctions[i].getArrived();
       }
     }
     return -1;
   }
 
-  public int getDeparted(int x, int y) {
+  public int getDeparted(Point pos) {
     // Finds departure heading for given junction
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { //(x == junctions[i].getX() && y == junctions[i].getY()) {
         return junctions[i].getDeparted();
       }
     }
     return -1;
   }
 
-  public int[] getMarks(int x, int y) {
+  public int[] getMarks(Point pos) {
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { //(x == junctions[i].getX() && y == junctions[i].getY()) {
         return junctions[i].getMarks();
       }
     }
     return null;
   }
 
-  public int findJunctionIndex(int x, int y) {
+  public int findJunctionIndex(Point pos) {
     // Finds arrival heading for given junction
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { //(x == junctions[i].getX() && y == junctions[i].getY()) {
         return i;
       }
     }
     return -1;
   }
 
-  public void changeMark(int x, int y, int direction, int mark) {
+  public void changeMark(Point pos, int direction, int mark) {
     // Change mark of a given junction
 
     int index = 0;
@@ -415,14 +420,14 @@ class RobotData {
     }
 
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { //(x == junctions[i].getX() && y == junctions[i].getY()) {
         junctions[i].setMark(index, mark);
       }
     }
     // System.out.println(Arrays.toString(junctions[this.findJunctionIndex(x, y)].getMarks()));
   }
 
-  public void changeMarks(int x, int y, int firstDirection, int firstMark, int secondDirection, int secondMark) {
+  public void changeMarks(Point pos, int firstDirection, int firstMark, int secondDirection, int secondMark) {
     // Changes 2 marks of given junction
 
     int index1 = 0, index2 = 0;
@@ -437,7 +442,7 @@ class RobotData {
     }
 
     for (int i = 0; i < junctionCounter; i++) {
-      if (x == junctions[i].getX() && y == junctions[i].getY()) {
+      if (pos.equals(junctions[i].getPos())) { // (x == junctions[i].getX() && y == junctions[i].getY()) {
         junctions[i].setMark(index1, firstMark);
         junctions[i].setMark(index2, secondMark);
       }
@@ -445,96 +450,46 @@ class RobotData {
     // System.out.println(Arrays.toString(junctions[this.findJunctionIndex(x, y)].getMarks()));
   }
 
-  public String printJunction() {
-    Junction currJunction = junctions[junctionCounter];
-    String x = Integer.toString(currJunction.getX());
-    String y = Integer.toString(currJunction.getY());
-
-    int arrivedHeading = currJunction.getArrived();
-    String arrived = "";
-
-    int departedHeading = currJunction.getDeparted();
-    String departed = "";
-
-    switch(arrivedHeading) {
-      case IRobot.NORTH:
-      arrived = "NORTH";
-      break;
-
-      case IRobot.EAST:
-      arrived = "EAST";
-      break;
-
-      case IRobot.SOUTH:
-      arrived = "SOUTH";
-      break;
-
-      case IRobot.WEST:
-      arrived = "WEST";
-      break;
-
-      default:
-      return ("Junction: " + (junctionCounter + 1) + " at (" + x + ", " + y + ")");
-    }
-
-    switch(departedHeading) {
-      case IRobot.NORTH:
-      departed = "NORTH";
-      break;
-
-      case IRobot.EAST:
-      departed = "EAST";
-      break;
-
-      case IRobot.SOUTH:
-      departed = "SOUTH";
-      break;
-
-      case IRobot.WEST:
-      departed = "WEST";
-      break;
-
-      default:
-      return ("Junction: " + (junctionCounter + 1) + " at (" + x + ", " + y + ") arrving from " + arrived);
-    }
-
-    return ("Junction: " + (junctionCounter + 1) + " at (" + x + ", " + y + ") arrving from " + arrived + " departed in " + departed);
+  public String printJunction(int index) {
+    Junction currJunction = junctions[index];
+    return "Junction: " + (index + 1) + currJunction;
   }
 }
 
 class Junction {
-  private int x, y, arrived, departed;
-  // X and Y co-ordinates of junction as well as direction arrived from
+  private Point pos;
+  // Position of junction
+
+  private int arrived, departed;
+  // Arrival and departure directions
 
   private int[] marks;
   // For use in Tremaux's Algorithm
   // 0 - blank, 1 - X, 2 - N
 
-  Junction(int x, int y) {
-    this.x = x;
-    this.y = y;
+  Junction(Point pos) {
+    this.pos = pos;
+    this.arrived = 0;
+    this.departed = 0;
     this.marks = new int[4];
   }
 
-  Junction(int x, int y, int arriveHeading) {
-    this.x = x;
-    this.y = y;
+  Junction(Point pos, int arriveHeading) {
+    this.pos = pos;
     this.arrived = arriveHeading;
+    this.departed = 0;
+    this.marks = new int[4];
   }
 
-  Junction(int x, int y, int arriveHeading, int departHeading) {
-    this.x = x;
-    this.y = y;
+  Junction(Point pos, int arriveHeading, int departHeading) {
+    this.pos = pos;
     this.arrived = arriveHeading;
     this.departed = departHeading;
+    this.marks = new int[4];
   }
 
-  public int getX() {
-    return x;
-  }
-
-  public int getY() {
-    return y;
+  public Point getPos() {
+    return pos;
   }
 
   public int getArrived() {
@@ -555,6 +510,58 @@ class Junction {
 
   public void setMark(int index, int newMark) {
     marks[index] = newMark;
+  }
+
+  public String toString() {
+
+    String arriveStr = "";
+    String departStr = "";
+
+    switch(arrived) {
+      case IRobot.NORTH:
+      arriveStr = "NORTH";
+      break;
+
+      case IRobot.EAST:
+      arriveStr = "EAST";
+      break;
+
+      case IRobot.SOUTH:
+      arriveStr = "SOUTH";
+      break;
+
+      case IRobot.WEST:
+      arriveStr = "WEST";
+      break;
+    }
+
+    switch(departed) {
+      case IRobot.NORTH:
+      departStr = "NORTH";
+      break;
+
+      case IRobot.EAST:
+      departStr = "EAST";
+      break;
+
+      case IRobot.SOUTH:
+      departStr = "SOUTH";
+      break;
+
+      case IRobot.WEST:
+      departStr = "WEST";
+      break;
+    }
+
+    if (arrived != 0 && departed != 0) {
+      return " at (" + pos.getX() + ", " + pos.getY() + ") arrving from " + arriveStr + " departed in " + departStr;
+    } else if (arrived != 0) {
+      return " at (" + pos.getX() + ", " + pos.getY() + ") arrving from " + arriveStr;
+    } else if (departed != 0) {
+      return " at (" + pos.getX() + ", " + pos.getY() + ") departed in " + departStr;
+    } else {
+      return " at (" + pos.getX() + ", " + pos.getY() + ")";
+    }
   }
 
 }

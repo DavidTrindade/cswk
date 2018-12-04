@@ -2,21 +2,25 @@ import uk.ac.warwick.dcs.maze.gui.MazeApp;
 import uk.ac.warwick.dcs.maze.logic.MazeLogic;
 
 public class Program {
-    // do not allow this class to be instantiated
-    private Program() {}
+  // do not allow this class to be instantiated
+  private Program() {}
 
     // the main entry point for this program
     public static void main(String args[]) {
-        // initialise the maze configuration and add an instance of
-        // the random robot controller
-		MazeLogic logic = new MazeLogic();
-        logic.getControllerPool().addController(new RandomController());
-        logic.getControllerPool().addController(new HomingController());
-        logic.getControllerPool().addController(new Explorer());
-        logic.getControllerPool().addController(new ExplorerLoop());
-        logic.getControllerPool().addController(new ExplorerFinale());
+      // initialise the maze configuration and add an instance of
+      // the random robot controller
+      MazeLogic logic = new MazeLogic();
+      logic.getControllerPool().addController(new RandomController());
+      logic.getControllerPool().addController(new HomingController());
+      logic.getControllerPool().addController(new Explorer());
+      logic.getControllerPool().addController(new Explorer2());
+      logic.getControllerPool().addController(new Explorer3());
+      logic.getControllerPool().addController(new ExplorerFinale());
+      logic.getControllerPool().addController(new GrandFinale());
 
-        // run the maze
-		new MazeApp(logic);
+      // run the maze
+      new MazeApp(logic);
+
+      
     }
-}
+  }
